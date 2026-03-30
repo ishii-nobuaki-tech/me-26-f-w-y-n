@@ -448,7 +448,7 @@ export default function EffectCalculator() {
       const nOT = parseFloat(ratioOthers) || 0;
       const totalSubs = nPB + nF1 + nHL + nBS + nOT;
       
-      primaryMetric = totalSubs;
+      primaryMetric = isRegular ? totalSubs * effectiveDuration : totalSubs;
 
       if (isValid) {
         const cPB = parseFloat(churnProBaseball) || 0;
@@ -511,14 +511,14 @@ export default function EffectCalculator() {
           : `${f(totalSubs)}人`;
 
         details.push({
-          label: primaryLabel,
+          label: isRegular ? `${primaryLabel}（1ヶ月あたり）` : primaryLabel,
           formula: '入力された内訳の合計',
           calculation: primaryCalculation,
-          result: f(primaryMetric),
+          result: f(totalSubs),
           unit: '人'
         });
 
-        const sacFormula = isRegular ? `施策コスト ÷ ${primaryLabel} ÷ 施策実施期間` : `施策コスト ÷ ${primaryLabel}`;
+        const sacFormula = isRegular ? `施策コスト ÷ ${primaryLabel}（1ヶ月あたり） ÷ 施策実施期間` : `施策コスト ÷ ${primaryLabel}`;
         const sacCalculation = isRegular ? `${f(numCost)}円 ÷ ${f(totalSubs)}人 ÷ ${f(effectiveDuration)}ヶ月` : `${f(numCost)}円 ÷ ${f(totalSubs)}人`;
 
         details.push({
@@ -555,7 +555,7 @@ export default function EffectCalculator() {
 
         details.push({
           label: '各ジャンルの推定継続期間',
-          formula: '過去実績の平均継続月数 × ((1 - 対象施策の解約率) ÷ (1 - 過去実績の解約率))',
+          formula: '過去実績の平均継続月数 × ((1 - 対象施策のN+1ヶ月解約率) ÷ (1 - 過去実績のN+1ヶ月解約率))',
           calculation: durationCalculations.length > 0 ? durationCalculations.join('\n') : '加入者数が入力されていません',
           result: durationResults.length > 0 ? durationResults.join('\n') : '-',
           unit: ''
@@ -624,13 +624,13 @@ export default function EffectCalculator() {
       const isTested = tCount > 0 && cCount > 0 && tChurn > 0 && cChurn > 0;
       const showNoSignificance = isTested && !isSignificant;
 
-      primaryMetric = showNoSignificance ? '有意差なし' : numTarget;
+      primaryMetric = showNoSignificance ? '有意差なし' : (isRegular ? numTarget * effectiveDuration : numTarget);
       const effectiveTarget = showNoSignificance ? 0 : numTarget;
       profit = showNoSignificance ? '有意差なし' : (effectiveTarget * ARPU * MARGIN_RATE * effectiveDuration) - numCost;
       sacOrArpu = 0;
 
       details.push({
-        label: '施策の対象顧客数', formula: 'テストグループの顧客数',
+        label: isRegular ? '施策の対象顧客数（1ヶ月あたり）' : '施策の対象顧客数', formula: 'テストグループの顧客数',
         calculation: `${f(tCount)}人`,
         result: f(tCount), unit: '人'
       });
@@ -640,14 +640,14 @@ export default function EffectCalculator() {
         result: showNoSignificance ? '有意差なし' : churnImprovement.toFixed(1), unit: showNoSignificance ? '' : '%'
       });
       details.push({
-        label: primaryLabel, formula: '施策の対象顧客数 × 解約率改善幅',
+        label: isRegular ? `${primaryLabel}（1ヶ月あたり）` : primaryLabel, formula: '施策の対象顧客数 × 解約率改善幅',
         calculation: `${f(tCount)}人 × ${showNoSignificance ? '0' : churnImprovement.toFixed(1)}%`,
-        result: showNoSignificance ? '有意差なし' : f(primaryMetric), unit: showNoSignificance ? '' : '人'
+        result: showNoSignificance ? '有意差なし' : f(numTarget), unit: showNoSignificance ? '' : '人'
       });
       details.push({
         label: '利益', 
         formula: isRegular 
-          ? '解約抑止顧客数 × ARPU × 粗利率（0.3） × 期間 － 施策コスト' 
+          ? '解約抑止顧客数 × ARPU × 粗利率（0.3） × 施策実施期間 － 施策コスト' 
           : '解約抑止顧客数 × ARPU × 粗利率（0.3） － 施策コスト',
         calculation: showNoSignificance 
           ? '有意差なし'
@@ -672,7 +672,7 @@ export default function EffectCalculator() {
       const nOT = parseFloat(ratioOthers) || 0;
       const totalSubs = nPB + nF1 + nHL + nBS + nOT;
 
-      primaryMetric = totalSubs;
+      primaryMetric = isRegular ? totalSubs * effectiveDuration : totalSubs;
 
       const hasPriceAfter = priceAfter !== '' && !isNaN(parseFloat(priceAfter));
       const pAfter = hasPriceAfter ? parseFloat(priceAfter) : 0;
@@ -714,13 +714,13 @@ export default function EffectCalculator() {
           : '0';
 
         details.push({
-          label: `各ジャンルの${term}顧客数`, formula: `入力された${term}内訳`,
+          label: isRegular ? `各ジャンルの${term}顧客数（1ヶ月あたり）` : `各ジャンルの${term}顧客数`, formula: `入力された${term}内訳`,
           calculation: customerCalcStr,
-          result: f(primaryMetric), unit: '人'
+          result: f(totalSubs), unit: '人'
         });
         const durationLabel = isUpsell ? 'アップセル後の推定継続期間' : 'クロスセル後の推定継続期間';
         details.push({
-          label: '総継続月数', formula: `∑(各ジャンルの${term}顧客数 × 各ジャンルの${durationLabel})`,
+          label: isRegular ? '総継続月数（1ヶ月あたり）' : '総継続月数', formula: `∑(各ジャンルの${term}顧客数 × 各ジャンルの${durationLabel})`,
           calculation: durationCalcStr,
           result: f(totalUserMonths), unit: 'ヶ月'
         });
@@ -732,9 +732,9 @@ export default function EffectCalculator() {
         profit = (totalRevenue * effectiveDuration) - numCost;
 
         details.unshift({
-          label: primaryLabel, formula: '入力された内訳の合計',
+          label: isRegular ? `${primaryLabel}（1ヶ月あたり）` : primaryLabel, formula: '入力された内訳の合計',
           calculation: `${f(totalSubs)}人`,
-          result: f(primaryMetric), unit: '人'
+          result: f(totalSubs), unit: '人'
         });
         
         // LOGIC DIFFERENCE: Details for ARPU calculation
@@ -753,7 +753,7 @@ export default function EffectCalculator() {
         }
         
         details.push({
-          label: '利益', formula: isRegular ? '総継続月数 × ARPUの増加額 × 0.3 × 期間 － 施策コスト' : '総継続月数 × ARPUの増加額 × 0.3 － 施策コスト',
+          label: '利益', formula: isRegular ? '総継続月数（1ヶ月あたり） × ARPUの増加額 × 0.3 × 施策実施期間 － 施策コスト' : '総継続月数 × ARPUの増加額 × 0.3 － 施策コスト',
           calculation: isRegular
             ? `(${f(totalUserMonths)} × ${f(sacOrArpu)} × 0.3) × ${f(effectiveDuration)} － ${f(numCost)}`
             : `(${f(totalUserMonths)} × ${f(sacOrArpu)} × 0.3) － ${f(numCost)}`,
@@ -815,7 +815,7 @@ export default function EffectCalculator() {
       <div className="mb-5 group">
         <label className="block text-xs uppercase tracking-wider font-bold text-gray-500 mb-2 flex items-center gap-1.5 transition-colors group-focus-within:text-[#29a1c0]">
           <Users size={16} className="text-gray-400 group-focus-within:text-[#29a1c0] transition-colors" />
-          解約抑止顧客数
+          {activeTab === 'regular' ? '解約抑止顧客数（1ヶ月あたり）' : '解約抑止顧客数'}
         </label>
         <div className="p-4 bg-white/50 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-3">
@@ -874,7 +874,7 @@ export default function EffectCalculator() {
             </div>
             <div className="flex items-center justify-between bg-blue-50/50 p-3 rounded-xl border border-blue-100">
               <label className="text-xs font-bold text-blue-600 flex items-center gap-1.5 uppercase tracking-wider">
-                解約抑止顧客数
+                {activeTab === 'regular' ? '解約抑止顧客数（1ヶ月あたり）' : '解約抑止顧客数'}
               </label>
               <div className="text-xl font-black text-blue-700">
                 {showNoSignificance ? (
@@ -932,7 +932,7 @@ export default function EffectCalculator() {
       return "有意差がないので、施策効果を出せないよ。サンプルサイズが足りているか確かめてみよう！";
     }
     if (results.profit === 0 && !cost) {
-      return "数値を入力して、試算を始めてみよう！";
+      return "数値を入力して、効果測定を実施しよう！";
     }
 
     const profitNum = results.profit as number;
@@ -967,7 +967,7 @@ export default function EffectCalculator() {
     <div className="mb-5 group">
       <label className="block text-xs uppercase tracking-wider font-bold text-gray-500 mb-2 flex items-center gap-1.5 transition-colors group-focus-within:text-[#29a1c0]">
         <Users size={16} className="text-gray-400 group-focus-within:text-[#29a1c0] transition-colors" />
-        {isUpsellRatioMode ? `${category === CATEGORIES.UPSELL.id ? "アップセル" : "クロスセル"}顧客数` : (category === CATEGORIES.RETURN.id ? "再加入者数" : "新規加入者数")}
+        {isUpsellRatioMode ? `${category === CATEGORIES.UPSELL.id ? "アップセル" : "クロスセル"}顧客数${activeTab === 'regular' ? '（1ヶ月あたり）' : ''}` : (category === CATEGORIES.RETURN.id ? (activeTab === 'regular' ? "再加入者数（1ヶ月あたり）" : "再加入者数") : (category === CATEGORIES.ACQUISITION.id && activeTab === 'regular' ? "新規加入者数（1ヶ月あたり）" : "新規加入者数"))}
       </label>
       <div className="p-4 bg-white/50 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-sm">
         <div className="flex items-center justify-between mb-3">
@@ -988,7 +988,7 @@ export default function EffectCalculator() {
         <div className="pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
             <label className="text-xs font-bold text-gray-500 flex items-center gap-1.5 uppercase tracking-wider">
-              {isUpsellRatioMode ? `${category === CATEGORIES.UPSELL.id ? "アップセル" : "クロスセル"}顧客数` : (category === CATEGORIES.RETURN.id ? "再加入者数" : "新規加入者数")}
+              {isUpsellRatioMode ? `${category === CATEGORIES.UPSELL.id ? "アップセル" : "クロスセル"}顧客数${activeTab === 'regular' ? '（1ヶ月あたり）' : ''}` : (category === CATEGORIES.RETURN.id ? (activeTab === 'regular' ? "再加入者数（1ヶ月あたり）" : "再加入者数") : (category === CATEGORIES.ACQUISITION.id && activeTab === 'regular' ? "新規加入者数（1ヶ月あたり）" : "新規加入者数"))}
             </label>
             <div className="text-lg font-black text-slate-700">
               {formatNumber(currentRatioTotal)} <span className="text-sm text-gray-400 font-bold">人</span>
@@ -1140,7 +1140,7 @@ export default function EffectCalculator() {
               <InputField label="ARPU（基本料抜き）" icon={DollarSign} value={churnArpuInput} onChange={setChurnArpuInput} suffix="円" placeholder="0" />
             )}
 
-            <InputField label="施策コスト" icon={DollarSign} value={cost} onChange={setCost} suffix="円" placeholder="10,000,000" />
+            <InputField label={activeTab === 'regular' ? "施策コスト（全期間合計）" : "施策コスト"} icon={DollarSign} value={cost} onChange={setCost} suffix="円" placeholder="10,000,000" />
 
             {activeTab === 'regular' && <InputField label="施策実施期間" icon={Calendar} value={duration} onChange={setDuration} suffix="ヶ月" placeholder="12" />}
           </div>
