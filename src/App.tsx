@@ -4,22 +4,24 @@ import EffectCalculator from './components/EffectCalculator';
 const App: React.FC = () => {
   const checkAccess = () => {
     try {
-      // 1. iframe内かどうかの判定 (より確実な方法)
+      // 1. 通常のiframe判定
       const inIframe = window.self !== window.top;
       
       // 2. ローカル開発環境やAI Studioプレビュー環境での直接アクセスは許可する（開発用）
       const isDevOrPreview = window.location.hostname === 'localhost' || window.location.hostname.includes('.run.app');
 
-      // 3. GitHub Pages上での動作確認用 (デバッグ用に追加)
-      const isGitHubPages = window.location.hostname.includes('github.io');
+      // 3. URLパラメータによる判定（SharePoint等でiframe判定が効かない場合の確実な方法）
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasEmbedParam = urlParams.get('embed') === 'true';
 
-      // iframe内（SharePoint等）で開かれている、または許可された環境であれば許可
-      // ※SharePointの埋め込みWebパーツは特殊な挙動をすることがあるため、
-      //   inIframeがfalseになっても、特定の条件で許可する必要があるかもしれません。
-      //   まずはよりシンプルな判定(window.self !== window.top)で試します。
-      return inIframe || isDevOrPreview;
+      // 4. リファラー（リンク元）による判定
+      const referrer = document.referrer.toLowerCase();
+      const isFromSharePoint = referrer.includes('sharepoint.com');
+
+      // いずれかの条件を満たせばアクセス許可
+      return inIframe || isDevOrPreview || hasEmbedParam || isFromSharePoint;
     } catch (e) {
-      // クロスオリジン制約でエラーが出た場合は確実にiframe内 (別ドメインの親を参照しようとしたため)
+      // クロスオリジン制約でエラーが出た場合は確実にiframe内
       return true;
     }
   };
@@ -31,6 +33,8 @@ const App: React.FC = () => {
     hostname: window.location.hostname,
     selfEqualsTop: window.self === window.top,
     selfEqualsParent: window.self === window.parent,
+    referrer: document.referrer,
+    search: window.location.search,
     userAgent: navigator.userAgent
   };
 
