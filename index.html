@@ -8,7 +8,20 @@
     <title>App</title>
   </head>
   <body>
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+        JavaScriptが有効になっていないか、ブロックされています。<br />
+        SharePointの設定でスクリプトの実行が許可されているか確認してください。
+      </div>
+    </noscript>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.message && e.message.indexOf('Failed to fetch dynamically imported module') > -1) {
+          document.getElementById('root').innerHTML = '<div style="padding: 20px; text-align: center; font-family: sans-serif;">アプリの読み込みに失敗しました。<br/>URLの末尾にスラッシュ（/）がついているか確認してください。<br/>例: https://.../repo/</div>';
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
